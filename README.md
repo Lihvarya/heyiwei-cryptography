@@ -1,6 +1,6 @@
 # 何意味生成器 
 
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache License 2.0-blue.svg)](LICENSE)
 [![GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-brightgreen)](https://[YOUR_USERNAME].github.io/what-the-meaning-encoder/) 
 <!-- 记得替换上方的 [YOUR_USERNAME] 为您的 GitHub 用户名 -->
 
