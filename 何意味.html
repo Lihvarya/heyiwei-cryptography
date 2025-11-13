@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>何意味生成器</title>
+    <style>
+        /* 优化导入的字体库：
+           将 Google Fonts 的 Poppins 替换为阿里巴巴公共 CDN 提供的 Noto Sans SC (思源黑体)，
+           确保在中国大陆的流畅访问和美观显示。
+           导入 Noto Sans SC 的 300 (Light), 400 (Regular), 500 (Medium), 600 (Semi-bold) 字重。
+        */
+        @import url('https://fonts.alicdn.com/css?family=Noto+Sans+SC:300,400,500,600&display=swap');
+
+        :root {
+            --primary-color: #8e44ad;
+            --secondary-color: #9b59b6;
+            --success-color: #27ae60;
+            --success-hover-color: #2ecc71;
+            --light-bg-color: rgba(255, 255, 255, 0.9);
+            --text-color: #34495e;
+            --border-color: #dfe6e9;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            /* 将字体栈调整为优先使用 Noto Sans SC，并移除对 Poppins 的直接依赖，
+               以避免因 Google Fonts 无法访问而导致的字体加载问题。
+               sans-serif 作为最终的通用 fallback 字体。
+            */
+            --font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+            margin: 0;
+            color: var(--text-color);
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--light-bg-color);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px var(--shadow-color);
+            width: 100%;
+            max-width: 700px;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            text-align: center;
+        }
+
+        header {
+            margin-bottom: 35px;
+        }
+
+        header h1 {
+            color: var(--text-color);
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .io-box {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+        
+        h2 {
+            font-size: 18px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 12px;
+        }
+
+        /* 新增：包裹输入/输出区域和按钮的容器 */
+        .field-container {
+            position: relative; /* 使内部绝对定位的按钮相对于此容器 */
+            width: 100%;
+        }
+
+        textarea, #output {
+            width: 100%;
+            box-sizing: border-box; /* 保证 padding 不会撑大宽度 */
+            padding: 15px;
+            padding-top: 45px; /* 增加上内边距，为上方按钮留出空间 */
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            background-color: rgba(255, 255, 255, 0.7);
+            color: var(--text-color);
+        }
+
+        textarea {
+            height: 140px;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 10px rgba(142, 68, 173, 0.15);
+        }
+        
+        /* 优化后的工具按钮样式 */
+        .utility-buttons {
+            position: absolute; /* 绝对定位到 field-container */
+            top: 10px; /* 距离顶部 10px */
+            right: 10px; /* 距离右侧 10px */
+            display: flex;
+            flex-direction: row; /* 按钮水平排列 */
+            gap: 5px; /* 按钮间距 */
+            z-index: 10; /* 确保按钮在文本框上方 */
+        }
+        
+        .utility-btn {
+            background: rgba(255, 255, 255, 0.8); /* 按钮背景，略带透明 */
+            border: 1px solid var(--border-color); /* 按钮边框 */
+            cursor: pointer;
+            padding: 5px 10px;
+            opacity: 0.9;
+            transition: opacity 0.3s, color 0.3s, background-color 0.3s, border-color 0.3s;
+            color: #555;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 8px; /* 圆角更大 */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* 细微阴影 */
+        }
+        
+        .utility-btn:hover {
+            opacity: 1;
+            color: var(--primary-color);
+            background-color: rgba(255, 255, 255, 1); /* 鼠标悬停时背景更亮 */
+            border-color: var(--primary-color); /* 鼠标悬停时边框颜色变化 */
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .action-btn {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 14px 30px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .action-btn.decrypt {
+            background-color: var(--success-color);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+        
+        .action-btn.encrypt:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .action-btn.decrypt:hover {
+            background-color: var(--success-hover-color);
+        }
+
+        #output {
+            min-height: 100px;
+            word-wrap: break-word;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            background-color: #f8f9fa;
+        }
+
+        #output.processing {
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        #output.error {
+            color: #c0392b;
+            font-weight: 500;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>何意味生成器</h1>
+        </header>
+
+        <div class="io-box">
+             <h2>输入文本</h2>
+            <div class="field-container"> <!-- 新增包裹层 -->
+                <textarea id="text-input" placeholder="在此输入需要加密或解密的文本..."></textarea>
+                <div class="utility-buttons">
+                    <button class="utility-btn" onclick="pasteFromClipboard()" title="从剪贴板粘贴">粘贴</button>
+                    <button class="utility-btn" onclick="clearInput()" title="清空输入">清空</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="action-btn encrypt" onclick="processText(true)">加密</button>
+            <button class="action-btn decrypt" onclick="processText(false)">解密</button>
+        </div>
+
+        <div class="io-box">
+            <h2>处理结果</h2>
+            <div class="field-container"> <!-- 新增包裹层 -->
+                <div id="output"></div>
+                 <div class="utility-buttons">
+                    <button id="copy-btn" class="utility-btn" onclick="copyOutput()" title="复制结果">复制</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // *** 在这里增添你的词组！现在词组长度可以不同了。 ***
+        const PHRASES = [
+            "何意味", "河移位", "何异味", "核疫卫", "何益伟", "禾移位", "何奕伟", 
+            "禾益味", "何eva"
+        ];
+        
+        const BASE = PHRASES.length;
+        const CODE_BLOCK_LENGTH = Math.ceil(Math.log(0xFFFF) / Math.log(BASE)); 
+        
+        const phraseMap = new Map();
+        PHRASES.forEach((phrase, index) => {
+            phraseMap.set(phrase, index);
+        });
+
+        const sortedPhrases = [...PHRASES].sort((a, b) => b.length - a.length);
+
+        function encrypt(text) {
+            let encryptedResult = "";
+            for (let i = 0; i < text.length; i++) {
+                const charCode = text.charCodeAt(i);
+                const baseNString = charCode.toString(BASE);
+                const paddedBaseNString = baseNString.padStart(CODE_BLOCK_LENGTH, '0');
+                
+                for (let j = 0; j < paddedBaseNString.length; j++) {
+                    const digit = parseInt(paddedBaseNString[j], BASE);
+                    encryptedResult += PHRASES[digit];
+                }
+            }
+            return encryptedResult;
+        }
+
+        function decrypt(text) {
+            let decryptedResult = "";
+            let tempEncryptedText = text;
+            let currentBaseNDigits = "";
+
+            while (tempEncryptedText.length > 0) {
+                let matchedPhrase = null;
+                let matchedDigit = -1;
+                let foundMatch = false;
+
+                for (const phrase of sortedPhrases) {
+                    if (tempEncryptedText.startsWith(phrase)) {
+                        matchedPhrase = phrase;
+                        matchedDigit = phraseMap.get(phrase);
+                        foundMatch = true;
+                        break;
+                    }
+                }
+
+                if (!foundMatch) {
+                    return `解密失败：密文包含无法识别的词组或格式错误。错误点开始于 "${tempEncryptedText.substring(0, 10)}..."`;
+                }
+
+                currentBaseNDigits += matchedDigit.toString(BASE);
+                tempEncryptedText = tempEncryptedText.substring(matchedPhrase.length);
+
+                if (currentBaseNDigits.length === CODE_BLOCK_LENGTH) {
+                    const charCode = parseInt(currentBaseNDigits, BASE);
+                    decryptedResult += String.fromCharCode(charCode);
+                    currentBaseNDigits = "";
+                }
+            }
+
+            if (currentBaseNDigits.length > 0) {
+                return "解密失败：密文长度不完整，无法完全解密。";
+            }
+
+            return decryptedResult;
+        }
+
+        function processText(isEncrypt) {
+            const inputText = document.getElementById('text-input').value;
+            const outputDiv = document.getElementById('output');
+            
+            outputDiv.className = 'processing';
+
+            if (inputText.trim() === "") {
+                outputDiv.textContent = isEncrypt ? "请输入需要加密的内容。" : "请输入需要解密的内容。";
+                return;
+            }
+            
+            outputDiv.textContent = "处理中...";
+
+            // 使用 setTimeout 模拟处理延迟，改善用户体验
+            setTimeout(() => {
+                let result;
+                if (isEncrypt) {
+                    result = encrypt(inputText);
+                } else {
+                    result = decrypt(inputText);
+                }
+
+                if(result.startsWith("解密失败")) {
+                    outputDiv.className = 'error';
+                } else {
+                    outputDiv.className = '';
+                }
+                outputDiv.textContent = result;
+            }, 100); // 100毫秒延迟
+        }
+
+        function clearInput() {
+            document.getElementById('text-input').value = "";
+            document.getElementById('output').textContent = "";
+            document.getElementById('output').className = '';
+        }
+        
+        async function pasteFromClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('text-input').value = text;
+            } catch (err) {
+                alert('无法从剪贴板粘贴。请检查浏览器权限。');
+                console.error('Failed to read clipboard contents: ', err);
+            }
+        }
+
+        function copyOutput() {
+            const outputText = document.getElementById('output').textContent;
+            const copyBtn = document.getElementById('copy-btn');
+            
+            if (!outputText || outputText === "处理中...") {
+                return;
+            }
+
+            navigator.clipboard.writeText(outputText).then(() => {
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '已复制!';
+                copyBtn.disabled = true;
+                
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.disabled = false;
+                }, 2000);
+            }).catch(err => {
+                alert('复制失败!');
+                console.error('Could not copy text: ', err);
+            });
+        }
+    </script>
+
+</body>
+</html>
