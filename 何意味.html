@@ -230,8 +230,9 @@
     <script>
         // *** 在这里增添你的词组！现在词组长度可以不同了。 ***
         const PHRASES = [
-            "何意味", "河移位", "何异味", "核疫卫", "何益伟", "禾移位", "何奕伟", 
-            "禾益味", "何eva"
+            "何意味", "河移位", "何异味", "核疫卫", "何益伟", "禾移位", "何奕伟", "喝益胃", "呵异味", "何以畏",
+            "禾益味", "何eva", "荷移位", "河异味", "合意味", "核异位", "盒移位", "喝异味", "呵意味","贺意味", 
+            "合议为", "何以慰", "合一味", "何以为", "河屹巍", "河易危", "核易危", "合意为", "何以谓","何意为",
         ];
         
         const BASE = PHRASES.length;
@@ -244,60 +245,94 @@
 
         const sortedPhrases = [...PHRASES].sort((a, b) => b.length - a.length);
 
-        function encrypt(text) {
-            let encryptedResult = "";
-            for (let i = 0; i < text.length; i++) {
-                const charCode = text.charCodeAt(i);
-                const baseNString = charCode.toString(BASE);
-                const paddedBaseNString = baseNString.padStart(CODE_BLOCK_LENGTH, '0');
-                
-                for (let j = 0; j < paddedBaseNString.length; j++) {
-                    const digit = parseInt(paddedBaseNString[j], BASE);
-                    encryptedResult += PHRASES[digit];
-                }
+       // ... 您已有的 PHRASES, phraseMap, sortedPhrases 定义保持不变 ...
+
+// 使用 BigInt 实现的高效加密函数
+function encrypt(text) {
+    if (!text) {
+        return "";
+    }
+
+    // 1. 使用 TextEncoder 将字符串转换为 UTF-8 字节数组
+    const encoder = new TextEncoder();
+    const byteData = encoder.encode(text);
+
+    // 2. 将字节数组转换为一个 BigInt
+    let largeNumber = 0n; // 'n' 表示这是一个 BigInt
+    for (let i = 0; i < byteData.length; i++) {
+        largeNumber = (largeNumber << 8n) + BigInt(byteData[i]);
+    }
+
+    const base = BigInt(PHRASES.length);
+    if (largeNumber === 0n) {
+        return PHRASES[0];
+    }
+
+    // 3. 将 BigInt 转换为目标进制的索引数组
+    let indices = [];
+    let tempNumber = largeNumber;
+    while (tempNumber > 0n) {
+        const remainder = tempNumber % base;
+        indices.push(Number(remainder)); // 数组中存储普通数字即可
+        tempNumber = tempNumber / base;
+    }
+
+    // 4. 翻转并映射为词组
+    return indices.reverse().map(i => PHRASES[i]).join('');
+}
+
+// 使用 BigInt 实现的高效解密函数
+function decrypt(encryptedText) {
+    if (!encryptedText) {
+        return "";
+    }
+
+    const base = BigInt(PHRASES.length);
+    let largeNumber = 0n;
+
+    let tempText = encryptedText;
+    // 1. 将词组序列解析为代表大整数的 BigInt
+    while (tempText.length > 0) {
+        let foundMatch = false;
+        for (const phrase of sortedPhrases) {
+            if (tempText.startsWith(phrase)) {
+                const index = BigInt(phraseMap.get(phrase));
+                largeNumber = largeNumber * base + index;
+                tempText = tempText.substring(phrase.length);
+                foundMatch = true;
+                break;
             }
-            return encryptedResult;
         }
-
-        function decrypt(text) {
-            let decryptedResult = "";
-            let tempEncryptedText = text;
-            let currentBaseNDigits = "";
-
-            while (tempEncryptedText.length > 0) {
-                let matchedPhrase = null;
-                let matchedDigit = -1;
-                let foundMatch = false;
-
-                for (const phrase of sortedPhrases) {
-                    if (tempEncryptedText.startsWith(phrase)) {
-                        matchedPhrase = phrase;
-                        matchedDigit = phraseMap.get(phrase);
-                        foundMatch = true;
-                        break;
-                    }
-                }
-
-                if (!foundMatch) {
-                    return `解密失败：密文包含无法识别的词组或格式错误。错误点开始于 "${tempEncryptedText.substring(0, 10)}..."`;
-                }
-
-                currentBaseNDigits += matchedDigit.toString(BASE);
-                tempEncryptedText = tempEncryptedText.substring(matchedPhrase.length);
-
-                if (currentBaseNDigits.length === CODE_BLOCK_LENGTH) {
-                    const charCode = parseInt(currentBaseNDigits, BASE);
-                    decryptedResult += String.fromCharCode(charCode);
-                    currentBaseNDigits = "";
-                }
-            }
-
-            if (currentBaseNDigits.length > 0) {
-                return "解密失败：密文长度不完整，无法完全解密。";
-            }
-
-            return decryptedResult;
+        if (!foundMatch) {
+            return `解密失败：密文包含无法识别的词组或格式错误。错误点开始于 "${tempText.substring(0, 10)}..."`;
         }
+    }
+
+    // 2. 将 BigInt 转换回字节数组
+    if (largeNumber === 0n && encryptedText === PHRASES[0]) {
+        // 特殊处理加密内容为0的情况
+         return new TextDecoder().decode(new Uint8Array([0]));
+    }
+    
+    let bytes = [];
+    let tempNumber = largeNumber;
+    while (tempNumber > 0n) {
+        bytes.push(Number(tempNumber & 255n)); // 取最低8位
+        tempNumber = tempNumber >> 8n; // 右移8位
+    }
+
+    const byteData = new Uint8Array(bytes.reverse());
+
+    // 3. 使用 TextDecoder 将字节数组解码为字符串
+    try {
+        const decoder = new TextDecoder('utf-8', { fatal: true }); // fatal: true 会在解码失败时抛出错误
+        return decoder.decode(byteData);
+    } catch (e) {
+        return "解密失败：字节序列不是有效的UTF-8编码文本。";
+    }
+}
+
+        
 
         function processText(isEncrypt) {
             const inputText = document.getElementById('text-input').value;
