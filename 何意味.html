@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>何意味生成器</title>
     <style>
-        /* 优化导入的字体库：
-           将 Google Fonts 的 Poppins 替换为阿里巴巴公共 CDN 提供的 Noto Sans SC (思源黑体)，
-           确保在中国大陆的流畅访问和美观显示。
-           导入 Noto Sans SC 的 300 (Light), 400 (Regular), 500 (Medium), 600 (Semi-bold) 字重。
+        /* 导入 Noto Sans SC 的 300 (Light), 400 (Regular), 500 (Medium), 600 (Semi-bold) 字重。
         */
         @import url('https://fonts.alicdn.com/css?family=Noto+Sans+SC:300,400,500,600&display=swap');
 
@@ -21,10 +18,7 @@
             --text-color: #34495e;
             --border-color: #dfe6e9;
             --shadow-color: rgba(0, 0, 0, 0.1);
-            /* 将字体栈调整为优先使用 Noto Sans SC，并移除对 Poppins 的直接依赖，
-               以避免因 Google Fonts 无法访问而导致的字体加载问题。
-               sans-serif 作为最终的通用 fallback 字体。
-            */
+            
             --font-family: 'Noto Sans SC', sans-serif;
         }
 
